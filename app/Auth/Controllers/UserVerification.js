@@ -49,7 +49,7 @@ generateOTP = async(phone) =>{
     //create message
     let message =   `Hi  ${user.name} , OTP to verify your account is  ${otp}. OTP will expire in 5 minutes. Do not share with anyone.`
 
- 
+    
     //send message
     const smsStatus = true
     //const smsStatus = sendSMS(user.phone, message)
