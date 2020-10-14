@@ -13,6 +13,15 @@ inputValidate = [
         check('phone').isLength({ min: 10, max: 10 }).isInt(), 
 ]
 
+inputloginValidate = [
+    check('phone').isLength({ min: 10, max: 10 }).isInt(), 
+]
+
+inputverifyValidate = [
+    check('phone').isLength({ min: 10, max: 10 }).isInt(), 
+    check('otp').isLength({ min: 4, max: 4 }).isInt(), 
+]
+
 
 //for registering user
 register = async(req, res) => {
@@ -21,7 +30,7 @@ register = async(req, res) => {
     const errors = validationResult(req)
 
     if(!errors.isEmpty()){
-        return res.status(400).json({erros: errors.array()})
+        return res.status(400).json({errors: errors.array()})
     }
     
     try {
@@ -60,8 +69,8 @@ login = async(req, res) => {
     
     //check for errors
     const errors = validationResult(req)
-
-    if(!errors.isEmpty){
+    
+    if(!errors.isEmpty()){
         return res.status(400).json({errors: errors.array()})
     }
 
@@ -90,9 +99,11 @@ verifyLogin = async(req, res) => {
     //check for errors
     const errors = validationResult(req)
 
-    if(!errors.isEmpty){
+    if(!errors.isEmpty()){
         return res.status(400).json({errors: errors.array()})
     }
+
+    
 
     try {
         const {phone, otp} = req.body
@@ -138,7 +149,7 @@ resendOTP = async(req, res) => {
     //check for errors
     const errors = validationResult(req)
 
-    if(!errors.isEmpty){
+    if(!errors.isEmpty()){
         return res.status(400).json({errors: errors.array()})
     }
 
@@ -165,5 +176,7 @@ resendOTP = async(req, res) => {
 module.exports = {
     register,
     login,
-    inputValidate
+    inputValidate,
+    inputloginValidate,
+    inputverifyValidate
 }

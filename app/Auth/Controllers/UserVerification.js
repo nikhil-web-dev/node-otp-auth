@@ -11,16 +11,21 @@ generateOTP = async(phone) =>{
 
     //find User
     let user = await User.findOne({phone})
+    console.log(user);
+    
     if(!user) return {
         status: false,
         message: {
             error: 'user does not exist, need to register'
         }
     }
+    console.log(otp);
+    
 
+    
     //check otp generate attempts
     let userOTPCount = await UserOTP.count({user: user.id, status: true})
-    console.log(userOTPCount);
+    console.log('count:' + userOTPCount);
     
     if(userOTPCount > 3){
         
@@ -32,7 +37,7 @@ generateOTP = async(phone) =>{
          let otpDate = new Date(userOTPdetails.created_at)
          let diff = Math.abs(now - otpDate);
          var minutes = Math.floor((diff/1000)/60);
-         console.log(minutes);
+         console.log('time1:' + minutes);
 
  
         //disable after 15mins
@@ -41,7 +46,7 @@ generateOTP = async(phone) =>{
         return {
             status: false,
             message: {
-                error: 'Limit Exceeds, try after 15mins'
+                error: 'Time Limit Exceeds, try after 15mins'
             }
         }
     }
@@ -49,6 +54,7 @@ generateOTP = async(phone) =>{
     //create message
     let message =   `Hi  ${user.name} , OTP to verify your account is  ${otp}. OTP will expire in 5 minutes. Do not share with anyone.`
 
+    console.log(message);
     
     //send message
     const smsStatus = true
@@ -126,6 +132,8 @@ verifyOTP = async(phone, received_otp) => {
         //find if user exist
         const user = await User.findOne({phone})
 
+        console.log(user);
+        
         if(!user) return {
             status: false,
             message: {
@@ -136,6 +144,7 @@ verifyOTP = async(phone, received_otp) => {
     
         //get otp details
         let userOTP = await UserOTP.findOne({user: user.id, status: true }).sort({created_at: -1})
+        console.log(userOTP);
         
         if(!userOTP) return {
             status:false,
@@ -149,19 +158,8 @@ verifyOTP = async(phone, received_otp) => {
         let otpDate = new Date(userOTP.created_at)
         let diff = Math.abs(now - otpDate);
         var minutes = Math.floor((diff/1000)/60);
-        console.log(minutes);
+        console.log('time2:' + minutes);
 
-        if(minutes > 5){
-            let update = await UserOTP.findOneAndUpdate({user: user.id, otp: received_otp},{status: false,  deleted_at: now})
-            console.log('otp expired');
-
-            return {
-                status:false,
-                message:{
-                    error:'OTP expired'
-                }
-            }
-        }
 
         if(userOTP.counter > 3){
             let update = await UserOTP.findOneAndUpdate({user: user.id, otp: received_otp},{status: false, deleted_at: now})
@@ -170,7 +168,7 @@ verifyOTP = async(phone, received_otp) => {
             return {
                 status:false,
                 message:{
-                    error:'limit exceeds'
+                    error:'limit exceeds, try after 15mins'
                 }
             }
         }
@@ -199,7 +197,8 @@ resendVerificationOTP = async(phone) => {
 
     //find User
     let user =  await User.findOne({phone})
-
+    console.log(user);
+    
     if(!user) return {
         status: false,
         message: {
@@ -210,24 +209,52 @@ resendVerificationOTP = async(phone) => {
     //find OTP details
     let userOTP = await UserOTP.findOne({user: user.id, status: true }).sort({created_at: -1})
 
-    console.log(userOTP);
+ 
 
-    if(!userOTP) return {
-        status:false,
-        message:{
-            error: 'OTP not found'
-        }
-    }
-    //check otp cpunter limit
-    if(userOTP.counter >= 2){
-
-        let update = await UserOTP.findOneAndUpdate({user: user.id, otp: userOTP.otp},{status: false,  deleted_at: Date.now()})
-        console.log('limit exceeds');
-
+    if(!userOTP){
+     generateOTP(phone)
         return {
             status:false,
             message:{
-                error:'limit exceeds'
+                error: 'OTP not found, generating new OTP'
+            },
+        } 
+    }
+    console.log(userOTP.counter);
+    //check otp counter limit
+
+    if(userOTP.counter >= 2){
+    
+          //check if otp is expired
+          let now =  Date.now() 
+          let otpDate = new Date(userOTP.created_at)
+          let diff = Math.abs(now - otpDate);
+          var minutes = Math.floor((diff/1000)/60);
+          console.log('time3:' + minutes);
+
+          if(minutes > 5){
+            let update = await UserOTP.findOneAndUpdate({user: user.id, otp: userOTP.otp},{status: false,  deleted_at: Date.now()})
+            return {
+                status:false,
+                message:{
+                    error:'OTP Expired'
+                }
+            }
+          }
+
+          return {
+            status:false,
+            message:{
+                error:`Attempt exceeds, try after ${5 - minutes} minutes`
+            }
+        }
+
+
+        if(!userOTP) 
+        return {
+            status:false,
+            message:{
+                error:'resend attempt limit exceeds, try after 5 minutes'
             }
         }
     }
